@@ -1,11 +1,6 @@
 # train.py
 #!/usr/bin/env	python3
 
-""" train network using pytorch
-
-author baiyu
-"""
-
 import os
 import sys
 import argparse
@@ -28,7 +23,8 @@ from conf import settings
 from utils import get_network, get_training_dataloader, get_test_dataloader, WarmUpLR
 
 def train(epoch):
-
+    print('train(epoch):', epoch)
+    print('type(net):', type(net))
     net.train()
     for batch_index, (images, labels) in enumerate(cifar100_training_loader):
         if epoch <= args.warm:
@@ -37,8 +33,8 @@ def train(epoch):
         images = Variable(images)
         labels = Variable(labels)
 
-        labels = labels.cuda()
-        images = images.cuda()
+        #labels = labels.cuda()
+        #images = images.cuda()
 
         optimizer.zero_grad()
         outputs = net(images)
@@ -65,6 +61,7 @@ def train(epoch):
 
         #update training loss for each iteration
         writer.add_scalar('Train/loss', loss.item(), n_iter)
+        #break
 
     for name, param in net.named_parameters():
         layer, attr = os.path.splitext(name)
@@ -72,19 +69,24 @@ def train(epoch):
         writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
 
 def eval_training(epoch):
+    print('eval_training')
     net.eval()
 
     test_loss = 0.0 # cost function error
     correct = 0.0
-
+    print('len(cifar100_test_loader):', len(cifar100_test_loader))
+    i = 0
     for (images, labels) in cifar100_test_loader:
         images = Variable(images)
         labels = Variable(labels)
-
-        images = images.cuda()
-        labels = labels.cuda()
+        #print('images:', images)
+        #print('labels:', labels)
+        #images = images.cuda()
+        #labels = labels.cuda()
 
         outputs = net(images)
+        i=i+1
+        print('i:', i)
         loss = loss_function(outputs, labels)
         test_loss += loss.item()
         _, preds = outputs.max(1)
@@ -106,8 +108,8 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
-    parser.add_argument('-gpu', type=bool, default=True, help='use gpu or not')
-    parser.add_argument('-w', type=int, default=2, help='number of workers for dataloader')
+    parser.add_argument('-gpu', type=bool, default=False, help='use gpu or not') # True
+    parser.add_argument('-w', type=int, default=0, help='number of workers for dataloader') # 2
     parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
     parser.add_argument('-s', type=bool, default=True, help='whether shuffle the dataset')
     parser.add_argument('-warm', type=int, default=1, help='warm up training phase')
@@ -115,7 +117,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     net = get_network(args, use_gpu=args.gpu)
-        
+
     #data preprocessing:
     cifar100_training_loader = get_training_dataloader(
         settings.CIFAR100_TRAIN_MEAN,
@@ -133,10 +135,16 @@ if __name__ == '__main__':
         shuffle=args.s
     )
     
+    print('len(cifar100_training_loader):', len(cifar100_training_loader))
+    print('cifar100_test_loader:', cifar100_test_loader)
+    print('len(cifar100_test_loader.dataset):', len(cifar100_test_loader.dataset))
+
     loss_function = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
     train_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=settings.MILESTONES, gamma=0.2) #learning rate decay
     iter_per_epoch = len(cifar100_training_loader)
+    
+    print('len(cifar100_training_loader):', len(cifar100_training_loader))
     warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * args.warm)
     checkpoint_path = os.path.join(settings.CHECKPOINT_PATH, args.net, settings.TIME_NOW)
 
@@ -145,7 +153,7 @@ if __name__ == '__main__':
         os.mkdir(settings.LOG_DIR)
     writer = SummaryWriter(log_dir=os.path.join(
             settings.LOG_DIR, args.net, settings.TIME_NOW))
-    input_tensor = torch.Tensor(12, 3, 32, 32).cuda()
+    input_tensor = torch.Tensor(12, 3, 32, 32) #.cuda()
     writer.add_graph(net, Variable(input_tensor, requires_grad=True))
 
     #create checkpoint folder to save model
@@ -154,7 +162,10 @@ if __name__ == '__main__':
     checkpoint_path = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
 
     best_acc = 0.0
+    print('settings.EPOCH:', settings.EPOCH)
+
     for epoch in range(1, settings.EPOCH):
+        print('epoch:', epoch)
         if epoch > args.warm:
             train_scheduler.step(epoch)
 
@@ -171,3 +182,4 @@ if __name__ == '__main__':
             torch.save(net.state_dict(), checkpoint_path.format(net=args.net, epoch=epoch, type='regular'))
 
     writer.close()
+    print('writer.close()')

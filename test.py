@@ -27,9 +27,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-weights', type=str, required=True, help='the weights file you want to test')
-    parser.add_argument('-gpu', type=bool, default=True, help='use gpu or not')
-    parser.add_argument('-w', type=int, default=2, help='number of workers for dataloader')
-    parser.add_argument('-b', type=int, default=16, help='batch size for dataloader')
+    parser.add_argument('-gpu', type=bool, default=False, help='use gpu or not') # True
+    parser.add_argument('-w', type=int, default=0, help='number of workers for dataloader') #2
+    parser.add_argument('-b', type=int, default=128, help='batch size for dataloader') # 16
     parser.add_argument('-s', type=bool, default=True, help='whether shuffle the dataset')
     args = parser.parse_args()
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         batch_size=args.b,
         shuffle=args.s
     )
-
+    print('args.gpu:', args.gpu)
     net.load_state_dict(torch.load(args.weights), args.gpu)
     print(net)
     net.eval()
@@ -54,8 +54,11 @@ if __name__ == '__main__':
 
     for n_iter, (image, label) in enumerate(cifar100_test_loader):
         print("iteration: {}\ttotal {} iterations".format(n_iter + 1, len(cifar100_test_loader)))
-        image = Variable(image).cuda()
-        label = Variable(label).cuda()
+        #image = Variable(image).cuda()
+        #label = Variable(label).cuda()
+        device = torch.device('cpu')
+        # device = torch.device('cuda:0' if torch.cuda.is_avaliable() else 'cpu')
+        net = net.to(device)
         output = net(image)
         _, pred = output.topk(5, 1, largest=True, sorted=True)
 
@@ -67,7 +70,6 @@ if __name__ == '__main__':
 
         #compute top1 
         correct_1 += correct[:, :1].sum()
-
 
     print()
     print("Top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
