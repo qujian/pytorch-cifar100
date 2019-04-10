@@ -2,21 +2,18 @@
 #!/usr/bin/env	python3
 
 import os
-import sys
+#import sys
 import argparse
-from datetime import datetime
-
+#from datetime import datetime
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-
-from torch.utils.data import DataLoader
+#import torchvision
+#import torchvision.transforms as transforms
+#from torch.utils.data import DataLoader
 #from dataset import *
 from torch.autograd import Variable
-
 from tensorboardX import SummaryWriter
 
 from conf import settings

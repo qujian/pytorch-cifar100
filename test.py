@@ -12,12 +12,12 @@ import argparse
 #from dataset import *
 
 #from skimage import io
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 import torch
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-from torch.autograd import Variable
+#import torchvision.transforms as transforms
+#from torch.utils.data import DataLoader
+#from torch.autograd import Variable
 
 from conf import settings
 from utils import get_network, get_test_dataloader
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
         label = label.view(label.size(0), -1).expand_as(pred)
         correct = pred.eq(label).float()
-
+        print('correct:', correct)
         #compute top 5
         correct_5 += correct[:, :5].sum()
 
@@ -72,6 +72,8 @@ if __name__ == '__main__':
         correct_1 += correct[:, :1].sum()
 
     print()
+    print("Top 1: ", correct_1, '/', len(cifar100_test_loader.dataset))
+    print("Top 5: ", correct_5, '/', len(cifar100_test_loader.dataset))
     print("Top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
     print("Top 5 err: ", 1 - correct_5 / len(cifar100_test_loader.dataset))
     print("Parameter numbers: {}".format(sum(p.numel() for p in net.parameters())))
